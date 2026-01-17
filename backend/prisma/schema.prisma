@@ -1,0 +1,233 @@
+// Prisma Schema for InvestWise Investment Advisory Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CLIENT
+  ADVISOR
+  ADMIN
+}
+
+enum RiskTolerance {
+  CONSERVATIVE
+  MODERATE
+  AGGRESSIVE
+}
+
+enum GoalStatus {
+  PLANNING
+  IN_PROGRESS
+  ACHIEVED
+  ABANDONED
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  INVESTMENT
+  DIVIDEND
+  INTEREST
+}
+
+enum SubscriptionPlan {
+  FREE
+  BASIC
+  PREMIUM
+  ENTERPRISE
+}
+
+model User {
+  id              String           @id @default(uuid())
+  email           String           @unique
+  password        String
+  firstName       String
+  lastName        String
+  phone           String?
+  role            UserRole         @default(CLIENT)
+  isVerified      Boolean          @default(false)
+  subscriptionPlan SubscriptionPlan @default(FREE)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  profile         UserProfile?
+  portfolios      Portfolio[]
+  goals           FinancialGoal[]
+  transactions    Transaction[]
+  riskAssessment  RiskAssessment?
+  advisorProfile  AdvisorProfile?
+
+  @@map("users")
+}
+
+model UserProfile {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  dateOfBirth     DateTime?
+  occupation      String?
+  annualIncome    Float?
+  netWorth        Float?
+  investmentExperience String?
+  address         String?
+  city            String?
+  state           String?
+  zipCode         String?
+  country         String    @default("India")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model AdvisorProfile {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  certification   String?
+  experience      Int?      // years
+  specialization  String?
+  bio             String?
+  rating          Float     @default(0)
+  totalClients    Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("advisor_profiles")
+}
+
+model RiskAssessment {
+  id              String        @id @default(uuid())
+  userId          String        @unique
+  riskTolerance   RiskTolerance
+  timeHorizon     Int           // years
+  investmentGoals String[]
+  liquidityNeeds  String
+  marketKnowledge Int           // 1-10 scale
+  lossComfort     Int           // 1-10 scale
+  score           Float
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("risk_assessments")
+}
+
+model Portfolio {
+  id              String    @id @default(uuid())
+  userId          String
+  name            String
+  description     String?
+  totalValue      Float     @default(0)
+  investedAmount  Float     @default(0)
+  currentReturn   Float     @default(0)
+  returnPercentage Float    @default(0)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  holdings        Holding[]
+
+  @@map("portfolios")
+}
+
+model Holding {
+  id              String    @id @default(uuid())
+  portfolioId     String
+  symbol          String
+  name            String
+  type            String    // STOCK, MUTUAL_FUND, ETF, BOND, etc.
+  quantity        Float
+  averagePrice    Float
+  currentPrice    Float
+  totalValue      Float
+  investedValue   Float
+  returnAmount    Float
+  returnPercentage Float
+  sector          String?
+  purchaseDate    DateTime
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  portfolio       Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@map("holdings")
+}
+
+model FinancialGoal {
+  id              String      @id @default(uuid())
+  userId          String
+  name            String
+  description     String?
+  targetAmount    Float
+  currentAmount   Float       @default(0)
+  deadline        DateTime
+  priority        Int         @default(1)
+  status          GoalStatus  @default(PLANNING)
+  monthlyContribution Float?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("financial_goals")
+}
+
+model Transaction {
+  id              String          @id @default(uuid())
+  userId          String
+  type            TransactionType
+  amount          Float
+  currency        String          @default("INR")
+  description     String?
+  status          String          @default("completed")
+  referenceId     String?
+  metadata        Json?
+  createdAt       DateTime        @default(now())
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
+
+model MarketData {
+  id              String    @id @default(uuid())
+  symbol          String    @unique
+  name            String
+  currentPrice    Float
+  previousClose   Float
+  change          Float
+  changePercent   Float
+  volume          BigInt?
+  marketCap       BigInt?
+  sector          String?
+  lastUpdated     DateTime  @default(now())
+
+  @@map("market_data")
+}
+
+model Recommendation {
+  id              String    @id @default(uuid())
+  title           String
+  description     String
+  symbol          String?
+  action          String    // BUY, SELL, HOLD
+  targetPrice     Float?
+  riskLevel       String
+  reasoning       String
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("recommendations")
+}
