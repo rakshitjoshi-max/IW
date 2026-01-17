@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "@anthropic-ai/claude-code": "^2.1.11"
+  },
+  "scripts": {
+    "claude": "npx claude",
+    "claude-help": "npx claude --help",
+    "setup-claude": "./setup-claude.sh"
+  }
+}
